@@ -1,6 +1,6 @@
 ![Header Image](https://github.com/ee209-2020class/ee209-2020class.github.io/blob/master/ExtraInfo/logo.png)
 
-# `Student1`'s Project Folder
+# `Chris Chen`'s Project Folder
 
 > [!IMPORTANT]
 > Rename this folder from `Student1` to your own name.
