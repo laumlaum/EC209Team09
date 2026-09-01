@@ -1,0 +1,8 @@
+
+Resistor Values:
+33 ohm --> Measured = 33 ohms
+
+Capacitor Values:
+
+10uF --> Measured = 8.6uF
+10uF --> Measured = 8.5uF
