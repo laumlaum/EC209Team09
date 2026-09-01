@@ -1,6 +1,11 @@
 Resistor Values:
 R1: 33 Ohm --> Measured = 33 Ohms
 R2: 100 Ohm --> Measured = 56.5 Ohms
+R7: 10kOhm --> Measured = 9.95 kOhms
+R8: 10kOhm --> Measured = 9.96 kOhms
+R9: 10kOhm --> Measured = 9.95 kOhms
+R10: 9 kOhms --> Measured 8.22 kOhm + 828 Ohms = 9.1
+R11: 10kOhm --> Measured = 9.96 kOhms
 R14: 5.6 kOhm --> Measured = 5.6kOhm
 R19: 4.7 kOhms --> Measured = 4.62 kOhms
 
