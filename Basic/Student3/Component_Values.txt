@@ -14,4 +14,7 @@ C4: 10uF --> Measured = 10.1uF
 C5: 10uF -- Measured = 11uF
 C6: 10uF --> Measured = 8.6uF
 C7: 10uF --> Measured = 8.5uF
+C8: --
+C9: 1.5nF --> Measured = 1.5nF
+C10: --
 C14: 100nF --> Measured = 96.1nF
