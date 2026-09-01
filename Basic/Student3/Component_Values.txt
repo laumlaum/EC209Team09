@@ -1,8 +1,9 @@
 Resistor Values:
 Rin1: 33 Ohm --> Measured = 33 Ohms
-R5: 5.6 kOhm --> 5.6kOhm
-R6: 4.7 kOhms --> 4.62 kOhms
+R5: 5.6 kOhm --> Measured = 5.6kOhm
+R6: 4.7 kOhms --> Measured = 4.62 kOhms
 
 Capacitor Values:
+C: 100nF --> Measured = 96.1nF
 Cin1: 10uF --> Measured = 8.6uF
 Cout1: 10uF --> Measured = 8.5uF
