@@ -12,14 +12,18 @@
 #include "common.h"
 #include "int0.h"
 #include "timer1.h"
+#include <util/delay.h>
 #include <stdint.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
+
+extern volatile uint8_t flag;
 
 int main(void){
 	//TODO: set direction of LED port to OUTPUT
 	DDRB = 0xFF;
 	DDRD &= ~(1<<PIND2);
+	
 	
 	/*timer0_init();*/
 	adc_init();	
@@ -31,7 +35,10 @@ int main(void){
 	
 	while(1){
 		
-		
+		if(flag){
+			_delay_ms(1000);
+			adc_restart();
+		}
 		
 	}
 }
