@@ -17,7 +17,7 @@ void timer1_init(){
 	TCCR1A |= (1<<COM1B0);
 	TCCR1B |= (1<<WGM12) | (1<<CS10);
 	
-	OCR1A = 199;
-	OCR1B = 199;
+	OCR1A = 399;
+	OCR1B = 399;
 		
 }
