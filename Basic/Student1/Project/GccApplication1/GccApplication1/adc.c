@@ -4,17 +4,19 @@
 #include <avr/interrupt.h>
 
 extern volatile uint8_t channel = 0;
-volatile uint16_t adc0, adc1;
+volatile uint16_t adc0[40], adc1[40];
 volatile uint8_t counter= 0;
 volatile uint8_t flag = 0;
+volatile uint8_t adc_index = 0;
 
 ISR(ADC_vect){
 	PINB = (1<<PINB5); // Toggle pinb0 to signal end of conversion
 	if(channel==0){
-		adc0 = ADC;
+		adc0[adc_index] = ADC;
 	} else {
-		adc1 = ADC;
+		adc1[adc_index] = ADC;
 		counter++;
+		adc_index++;
 	}
 	channel ^= 1;
 	ADMUX = (1 << REFS0) | channel;
@@ -22,6 +24,7 @@ ISR(ADC_vect){
 	
 	if(counter >= 40){
 		flag=1;
+		adc_index =0;
 		ADCSRA &= ~(1 << ADATE);  //Stops ADC conversion
 	}	
 }
@@ -34,10 +37,13 @@ void adc_init(){
 }
 
 void adc_restart(){
-	counter =0;
-	flag =0;
-	ADCSRA |= (1<<ADATE);
-	TIFR1 = (1<<OCF1B);
+	counter = 0;
+	adc_index = 0;
+	channel = 0;
+	ADMUX = (1 << REFS0);
+	flag = 0;
+	TIFR1 = (1 << OCF1B);
+	ADCSRA |= (1 << ADATE);
 }
 
 uint16_t adc_read(uint8_t chan){
