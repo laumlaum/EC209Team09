@@ -15,3 +15,7 @@
 <img width="1536" height="989" alt="image" src="https://github.com/user-attachments/assets/47ebcb60-798b-4b76-872c-dc987def842d" />
 TIMER1 PERIOD 0.1ms, and ADC EOC ISR TOGGLE
 
+ADC samples and linear approximation:
+UART to Excel. Excel sheet uploaded
+[https://uoa-my.sharepoint.com/:x:/g/personal/hugn859_uoa_auckland_ac_nz/IQBfVFvoelZTRbf5Mq_QFmeiARsvdbJ8dWLNn8c9B22MRAw?e=SP1BV7](url)
+
