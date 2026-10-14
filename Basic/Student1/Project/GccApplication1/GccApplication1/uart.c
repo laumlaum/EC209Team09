@@ -21,3 +21,12 @@ void usart_transmit_string(char *str){
 		usart_transmit(str[i]);
 	}
 }
+
+void print_int(int32_t x){
+	char buf[11];
+	uint8_t i = 0;
+	if(x < 0){ usart_transmit('-'); x = -x; }
+	if(x == 0){ usart_transmit('0'); return; }
+	while(x){ buf[i++] = '0' + (x % 10); x /= 10; }
+	while(i) usart_transmit(buf[--i]);
+}
