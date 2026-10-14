@@ -1,38 +1,25 @@
 /*
- * timer0.c
+ * timer0.h
  *
- * Created: 17/09/2026 5:34:54 PM
+ * Created: 17/09/2026 5:34:27 PM
  *  Author: cche632
  */ 
-#include "timer0.h"
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
+
+#ifndef TIMER0_H_
+#define TIMER0_H_
+
+#include <stdbool.h>
 #include <stdint.h>
 
-static volatile uint16_t counter = 0;
+extern volatile uint16_t timer0counter;
 
-ISR(TIMER0_COMPA_vect){
-	counter++;
-	if(counter >= 10) {
-		counter = 0;
-	}
-}
+//Initialize timer0 as per Part 1
+void timer0_init();
 
-void timer0_init(){
-	//TODO: initialise and configure timer0 to count to 10ms
-	TCCR0A |= (1<<WGM01);
-	TCCR0B |= (1<<CS02);
-	TIMSK0 |= (1<<OCIE0A);
-	OCR0A = 77;
-}
+//Using polling check if timer0 has reached comparison value
+//if so, it will clear the compare flag and return 1
+//otherwise, it returns 0
+uint8_t timer0_check_clear_compare();
 
-uint8_t timer0_check_clear_compare(){
-	if( TIFR0 & (1 << OCF0A )){ //TODO: check compare flag
-		//TODO: clear compare flag.
-		//Note: in datasheet this is done by writing 1 to the compare flag
-		TIFR0 = (1<<OCF0A);
-		return 1;
-	}
-	return 0;
-}
+#endif
