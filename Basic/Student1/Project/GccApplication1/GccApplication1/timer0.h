@@ -12,6 +12,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+extern volatile uint16_t timer0counter;
+
 //Initialize timer0 as per Part 1
 void timer0_init();
 
