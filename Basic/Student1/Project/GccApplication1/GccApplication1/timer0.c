@@ -10,21 +10,19 @@
 #include <avr/interrupt.h>
 #include <stdint.h>
 
-static volatile uint16_t counter = 0;
+volatile uint16_t timer0counter = 0;
 
-ISR(TIMER0_COMPA_vect){
-	counter++;
-	if(counter >= 10) {
-		counter = 0;
-	}
+ISR(TIMER0_OVF_vect){
+	timer0counter++;
 }
 
 void timer0_init(){
 	//TODO: initialise and configure timer0 to count to 10ms
-	TCCR0A |= (1<<WGM01);
-	TCCR0B |= (1<<CS02);
-	TIMSK0 |= (1<<OCIE0A);
-	OCR0A = 77;
+	timer0counter = 0;
+	TCCR0A = 0;
+	TCCR0B |= (1<<CS01); // Prescaler of 8
+	TIMSK0 |= (1<<TOIE0); // TImer overflow interrupt enable
+	TIFR0 |= (1<<TOV0);
 }
 
 uint8_t timer0_check_clear_compare(){

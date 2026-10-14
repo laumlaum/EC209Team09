@@ -6,19 +6,25 @@
 #include <avr/interrupt.h>
 
 volatile uint16_t elapsed_ticks = 0;
-volatile uint8_t measurement_ready = 0;
+volatile uint8_t have_previous_edge = 0;
+volatile uint8_t period_ready = 0;
 
 ISR(INT0_vect){
-	PORTB ^= (1<<PINB5);
-	if(EICRA & (1<<ISC00)){
-		TCNT0 = 0;
-		TCCR0B |= (1<<CS02);
-		EICRA &= ~(1<<ISC00);
-		} else {
-		TCCR0B &= ~(1<<CS02);
-		elapsed_ticks = TCNT0;
-		measurement_ready = 1;
-		EICRA |= (1<<ISC00);
+	
+	uint32_t timestamp;
+	
+	timestamp = ((uint32_t)timer0counter * 256) + TCNT0;
+	
+	static uint32_t previous_timestamp = 0;
+	static uint8_t first_edge = 1;
+	
+	if(first_edge){
+		previous_timestamp = timestamp;
+		first_edge = 0;
+	} else {
+		elapsed_ticks = timestamp - previous_timestamp;
+		previous_timestamp = timestamp;
+		period_ready = 1;
 	}
 	
 }

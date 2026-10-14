@@ -13,7 +13,10 @@
 float convert_voltage(uint16_t raw);
 float convert_current(uint16_t raw);
 
-void calculate_measurements(const volatile uint16_t voltage, const volatile uint16_t current, uint8_t n, );
+float calc_vrms(const volatile uint16_t *v_raw, uint8_t n);
+float get_ipeak(const volatile uint16_t *i_raw, uint8_t n);
+
+float calculate_power(const volatile uint16_t *voltage, const volatile uint16_t *current, uint8_t n);
 
 
 #endif /* CALC_H_ */

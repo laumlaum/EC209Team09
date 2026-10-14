@@ -3,8 +3,11 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
+
+#define SAMPLES 80
+
 extern volatile uint8_t channel = 0;
-volatile uint16_t adc0[40], adc1[40];
+volatile uint16_t adc0[SAMPLES], adc1[SAMPLES];
 volatile uint8_t counter= 0;
 volatile uint8_t flag = 0;
 volatile uint8_t adc_index = 0;
@@ -22,7 +25,7 @@ ISR(ADC_vect){
 	ADMUX = (1 << REFS0) | channel;
 	TIFR1 = (1 << OCF1B);
 	
-	if(counter >= 40){
+	if(counter >= SAMPLES){
 		flag=1;
 		adc_index =0;
 		ADCSRA &= ~(1 << ADATE);  //Stops ADC conversion
