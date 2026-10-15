@@ -61,9 +61,14 @@ int main(void){
 				continue;
 			}
 			// flag == 1 means the ISR has stopped, so adc0/adc1 are safe to read
-			vrms_sum += calc_vrms(adc0, SAMPLES);                 // Gets Voltage RMS in mV
-			ipk_sum  += get_ipeak(adc1, SAMPLES);                 // gets peak current in mA
-			p_sum    += calculate_power(adc0, adc1, SAMPLES);     // gets power in mW
+			// Use only a whole number of signal cycles (see calc.c): 98 of the
+			// 100 pairs at 510 Hz, all 100 at 500 Hz.
+			float   hz = estimate_hz(adc0, SAMPLES);
+			uint8_t n  = whole_cycle_samples(hz, SAMPLES);
+
+			vrms_sum += calc_vrms(adc0, n);                       // Gets Voltage RMS in mV
+			ipk_sum  += get_ipeak(adc1, n);                       // gets peak current in mA
+			p_sum    += calculate_power(adc0, adc1, n, hz);       // gets power in W
 			windows++;
 
 			adc_restart();                // Re-arm: start the next window
