@@ -22,6 +22,10 @@
 #define GIS  0.5f           /* V across shunt per A of load  */
 #define GIO  2.485f         /* current amp gain              */
 
+#define IPEAK_CAL_A   0.000551f   /* quadratic term */
+#define IPEAK_CAL_B   0.752f      /* linear term    */
+#define IPEAK_CAL_C   36.6f       /* mA offset      */
+
 #define VREF_MV  5000.0f    /* measure AVCC on the board and put it here */
 
 /* Scale factors, worked out by the compiler (no division at run time) */
@@ -77,10 +81,16 @@ float calc_vrms(const volatile uint16_t *v_raw, uint8_t n){
 // }
 
 
-float get_ipeak(const volatile uint16_t *i_raw, uint8_t n){
-	return rms_counts(i_raw, n) * MA_PER_COUNT * 1.41421356;      // mA peak 
-}
 
+float get_ipeak(const volatile uint16_t *i_raw, uint8_t n){
+	float ipeak_raw = rms_counts(i_raw, n) * MA_PER_COUNT * 1.41421356f;   // mA peak, uncorrected
+
+	float ipeak_cal = IPEAK_CAL_A * ipeak_raw * ipeak_raw
+	+ IPEAK_CAL_B * ipeak_raw
+	+ IPEAK_CAL_C;                                        // mA peak, corrected
+
+	return (ipeak_cal < 0.0f) ? 0.0f : ipeak_cal;
+}
 float calculate_power(const volatile uint16_t *voltage, const volatile uint16_t *current, uint8_t n, float signal_hz){
 	// Averaging two samples TRIG_PERIOD_S either side shrinks a sine by
 	// cos(2 pi f Ts): this puts it back. (cos 36 deg = 0.809 at 200 us, 500 Hz)
