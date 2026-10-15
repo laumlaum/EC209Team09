@@ -6,30 +6,38 @@
 
 #define SAMPLES 80
 
-extern volatile uint8_t channel = 0;
+volatile uint8_t channel = 0;
 volatile uint16_t adc0[SAMPLES], adc1[SAMPLES];
 volatile uint8_t counter= 0;
 volatile uint8_t flag = 0;
 volatile uint8_t adc_index = 0;
+volatile uint8_t skip;
 
 ISR(ADC_vect){
-	PINB = (1<<PINB5); // Toggle pinb0 to signal end of conversion
-	if(channel==0){
-		adc0[adc_index] = ADC;
-	} else {
-		adc1[adc_index] = ADC;
+	
+	
+	uint8_t ch = channel;                 // channel that just finished converting
+	channel = ch ^ 1;
+	ADMUX = (1 << REFS0) | channel;       // next conversion, written early
+	uint16_t result = ADC;
+	PINB = (1<<PINB5);                    // EoC toggle
+
+	if(flag) return;
+	if(skip){ skip--; return; }
+
+	if(ch == 0){
+		adc0[adc_index] = result;
+		} else {
+		adc1[adc_index] = result;
 		counter++;
 		adc_index++;
 	}
-	channel ^= 1;
-	ADMUX = (1 << REFS0) | channel;
-	TIFR1 = (1 << OCF1B);
-	
+
 	if(counter >= SAMPLES){
-		flag=1;
-		adc_index =0;
-		ADCSRA &= ~(1 << ADATE);  //Stops ADC conversion
-	}	
+		flag = 1;
+		adc_index = 0;
+		ADCSRA &= ~(1 << ADATE);
+	}
 }
 
 void adc_init(){
@@ -43,6 +51,7 @@ void adc_restart(){
 	counter = 0;
 	adc_index = 0;
 	channel = 0;
+	skip = 2;
 	ADMUX = (1 << REFS0);
 	flag = 0;
 	TIFR1 = (1 << OCF1B);
