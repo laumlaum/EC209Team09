@@ -30,3 +30,9 @@ void print_int(int32_t x){
 	while(x){ buf[i++] = '0' + (x % 10); x /= 10; }
 	while(i) usart_transmit(buf[--i]);
 }
+
+void print_line(char *name, float value, char *unit){
+	usart_transmit_string(name);
+	print_int((int32_t)(value + 0.5f));      // rounded
+	usart_transmit_string(unit);
+}

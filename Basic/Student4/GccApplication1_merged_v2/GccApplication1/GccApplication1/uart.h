@@ -7,5 +7,6 @@ void usart_init(uint16_t ubrr);
 void usart_transmit(uint8_t data);
 void usart_transmit_string(char *str);
 void print_int(int32_t x);
+void print_line(char *name, float value, char *unit);
 
 #endif

@@ -24,7 +24,7 @@ ISR(ADC_vect){
 	if(skip){ skip--; return; }
 
 	if(ch == 0){
-		adc0[adc_index] = result;
+		adc0[adc_index] = result;		  // Alternates between adc0 and adc1
 		} else {
 		adc1[adc_index] = result;
 		counter++;
