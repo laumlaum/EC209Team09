@@ -11,6 +11,7 @@
 #include <math.h>
 
 #define PI_F           3.14159265f
+#define SAMPLE_PERIOD_S  0.0004f
 
 /* ---- Gains (from our circuit) ----
  * Voltage: divider R4/(R3+R4) = 2.7k/58.7k = 0.0460, diff amp gain 1.00
@@ -54,8 +55,29 @@ float calc_vrms(const volatile uint16_t *v_raw, uint8_t n){
 	return rms_counts(v_raw, n) * MV_PER_COUNT;                       // mV rms
 }
 
+
+// /* Amplitude of the fundamental in ADC counts (single-bin DFT).
+//  * Needs a whole number of cycles in the window, which you already have. */
+// static float fundamental_counts(const volatile uint16_t *raw, uint8_t n){
+// 	float mean = mean_raw(raw, n);
+// 	float w  = 2.0f * PI_F * SIGNAL_HZ * SAMPLE_PERIOD_S;  // phase step per sample
+// 	float dc = cosf(w), ds = sinf(w);
+// 	float c = 1.0f, s = 0.0f;
+// 	float re = 0.0f, im = 0.0f;
+// 
+// 	for(uint8_t k = 0; k < n; k++){
+// 		float x = (float)raw[k] - mean;
+// 		re += x * c;
+// 		im += x * s;
+// 		float c_new = c * dc - s * ds;   // rotate (c,s) by w
+// 		s = s * dc + c * ds;
+// 		c = c_new;
+// 	}
+// 	return 2.0f * sqrtf(re * re + im * im) / n;
+// }
+
 float get_ipeak(const volatile uint16_t *i_raw, uint8_t n){
-	return rms_counts(i_raw, n) * MA_PER_COUNT * 1.41421356f;         // mA peak = sqrt(2) x rms
+	return rms_counts(i_raw, n) * MA_PER_COUNT * 1.41421356;      // mA peak 
 }
 
 float calculate_power(const volatile uint16_t *voltage, const volatile uint16_t *current, uint8_t n){

@@ -52,6 +52,6 @@ void display_next_digit(void);
 void display_show_voltage(float vrms);
 void display_show_current(float ipk);
 void display_show_power(float watts);
-void display_show_energy(float energy);
+//void display_show_energy(float energy);
 
 #endif

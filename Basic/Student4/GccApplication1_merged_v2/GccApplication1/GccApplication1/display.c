@@ -156,4 +156,4 @@ static void display_show(float value, uint8_t unit)
 void display_show_voltage(float vrms)  { display_show(vrms,   UNIT_VOLTAGE); }
 void display_show_current(float ipk)   { display_show(ipk,    UNIT_CURRENT); }
 void display_show_power(float watts)   { display_show(watts,  UNIT_POWER);   }
-void display_show_energy(float energy) { display_show(energy, UNIT_ENERGY);  }
+//void display_show_energy(float energy) { display_show(energy, UNIT_ENERGY);  }

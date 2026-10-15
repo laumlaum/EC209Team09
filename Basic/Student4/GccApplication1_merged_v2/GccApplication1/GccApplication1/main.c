@@ -61,6 +61,8 @@ int main(void){
 
 	float energy_j = 0;          // energy in joules since power-up
 	uint8_t page = 0;            // display page: 0 V, 1 I, 2 P, 3 E
+	uint8_t page_ticks = 0;
+	#define PAGE_SECONDS 3
 
 	while(1){
 
@@ -110,9 +112,13 @@ int main(void){
 			case 0:  display_show_voltage(vrms / 1000.0f); break;
 			case 1:  display_show_current(ipk / 1000.0f);  break;
 			case 2:  display_show_power(p);                break;
-			default: display_show_energy(energy_j);        break;
+			default: display_show_voltage(vrms / 1000.0f);        break;
 			}
-			page = (page + 1) & 0x03;
+			if(++page_ticks >= PAGE_SECONDS){
+				page_ticks = 0;
+				page = (page +1) & 0x03;
+			}
+			/*page = (page + 1) & 0x03;*/
 
 // 			if(period_ready){
 // 				uint32_t ticks;
