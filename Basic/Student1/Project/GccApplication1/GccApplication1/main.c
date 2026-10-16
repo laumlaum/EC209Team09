@@ -7,6 +7,7 @@
 
 #define F_CPU 2000000UL
 #define SAMPLES 80
+
 #include "timer0.h"
 #include "adc.h"
 #include "common.h"
@@ -22,7 +23,7 @@
 extern volatile uint8_t flag;
 extern volatile uint16_t adc0[SAMPLES], adc1[SAMPLES];
 extern volatile uint8_t period_ready;
-extern volatile uint16_t elapsed_ticks;
+extern volatile uint32_t elapsed_ticks;
 
 int main(void){
 	//TODO: set direction of LED port to OUTPUT
@@ -30,12 +31,12 @@ int main(void){
 	DDRD &= ~(1<<PIND2);
 	
 	
-	timer0_init();
+	//timer0_init();
 	adc_init();	
 	timer1_init();
 	uint16_t ubrr = 12;
 	usart_init(ubrr);
-	int0_init();
+	//int0_init();
 	sei();
 	
 	DDRB |= (1<<PINB2);
@@ -51,6 +52,16 @@ int main(void){
 				adc_restart();
 				continue;
 			}
+			
+			usart_transmit_string("BEGIN\r\n");
+			usart_transmit_string("k,adc0,adc1\r\n");
+			for (uint8_t i = 0; i < SAMPLES; i++) {
+				print_int(i);        usart_transmit_string(",");
+				print_int(adc0[i]);  usart_transmit_string(",");
+				print_int(adc1[i]);  usart_transmit_string("\r\n");
+			}
+			usart_transmit_string("END\r\n");
+			
 			float vrms = calc_vrms(adc0,SAMPLES);
 			usart_transmit_string("V_rms: ");
 			print_int((int32_t)(vrms + 0.5f));      // mV, rounded
@@ -63,7 +74,7 @@ int main(void){
 			
 			float p = calculate_power(adc0, adc1, SAMPLES);
 			usart_transmit_string("P: ");
-			print_int((int32_t)(p + 0.5f));    // mW
+			print_int((int32_t)(p * 1000 + 0.5f));    // mW
 			usart_transmit_string(" mW\r\n");
 			
 // 			if(period_ready){
