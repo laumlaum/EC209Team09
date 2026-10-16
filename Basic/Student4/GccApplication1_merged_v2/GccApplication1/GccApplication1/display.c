@@ -8,11 +8,12 @@
 #include "display.h"
 #include <avr/io.h>
 
+// Shift register pins
 #define SH_CP  PC3
 #define SH_DS  PC4
 #define SH_ST  PC5
 
-/* Lab 6 table: segment patterns for 0..9 */
+// Lab 6 table: segment patterns for 0..9
 static const uint8_t seg_pattern[10] = {
 	0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F
 };
@@ -23,14 +24,7 @@ static volatile uint8_t front = 0;     /* which buffer the ISR is showing       
 static volatile uint8_t swap_request = 0;   /* main has filled the back buffer     */
 static uint8_t position = 0;           /* ISR only: digit being shown (0..3)       */
 
-/* ---- Unit LEDs (Voltage, Current, Power, Energy) ----
- * TODO: we don't know yet how the display board drives these four LEDs.
- * Fill this in from the display board schematic. Until then it does nothing,
- * so it can't interfere with any other pin. */
-static void unit_led_select(uint8_t unit)
-{
-	(void)unit;
-}
+
 
 void display_init(void)
 {
@@ -38,6 +32,7 @@ void display_init(void)
 	PORTD |= (1 << PD4) | (1 << PD5) | (1 << PD6) | (1 << PD7);   /* all digits off (active low) */
 	PORTC &= ~((1 << SH_CP) | (1 << SH_ST));
 
+	// Configure pins as output
 	DDRD |= (1 << PD4) | (1 << PD5) | (1 << PD6) | (1 << PD7);
 	DDRC |= (1 << SH_CP) | (1 << SH_DS) | (1 << SH_ST);
 
@@ -45,29 +40,32 @@ void display_init(void)
 		buffers[0][k] = SEG_DASH;
 		buffers[1][k] = SEG_DASH;
 	}
-	unit_led_select(UNIT_NONE);
 }
 
+// Prepares and formats display
 void format_7seg(uint16_t value, uint8_t dp_digit, uint8_t unit)
 {
+	// Wait until previous buffer update has been processed
 	while (swap_request) {
-		/* previous value not taken by the ISR yet (at most one 16 ms scan) */
+		
 	}
 
+	// Swaps buffers
 	uint8_t back_index = front ^ 1;
 	uint8_t *back = buffers[back_index];
 
+	// Limits value for the displays
 	if (value > 9999) {
 		value = 9999;
 	}
+	// Extracts values 
 	uint8_t d[4];
 	d[0] = value / 1000;
 	d[1] = (value / 100) % 10;
 	d[2] = (value / 10) % 10;
 	d[3] = value % 10;
 
-	/* Blank leading zeros, but never the digit holding the decimal point or the
-	 * last digit:  85 -> "  85",  0.697 -> "0.697" */
+	// Removes leading zeros while keeping the digits to be displayed
 	uint8_t last_needed = (dp_digit <= 3) ? dp_digit : 3;
 	uint8_t leading = 1;
 	for (uint8_t k = 0; k < 4; k++) {
@@ -78,6 +76,7 @@ void format_7seg(uint16_t value, uint8_t dp_digit, uint8_t unit)
 			back[k] = seg_pattern[d[k]];
 		}
 	}
+	// Adds decimal point to digit if required
 	if (dp_digit <= 3) {
 		back[dp_digit] |= SEG_DP;
 	}
@@ -86,20 +85,25 @@ void format_7seg(uint16_t value, uint8_t dp_digit, uint8_t unit)
 	swap_request = 1;              /* hand the new value to the ISR */
 }
 
+// Sends pattern to shift register
 static void shift_out(uint8_t pattern)
 {
-	for (uint8_t bit = 0; bit < 8; bit++) {      /* MSB (dp) first -> ends up on Q7 */
+	// Sets pattern to current bit
+	for (uint8_t bit = 0; bit < 8; bit++) {    
 		if (pattern & 0x80) {
 			PORTC |= (1 << SH_DS);
 		} else {
 			PORTC &= ~(1 << SH_DS);
 		}
-		PORTC |= (1 << SH_CP);                   /* rising edge shifts the bit in */
+		PORTC |= (1 << SH_CP);                   
 		PORTC &= ~(1 << SH_CP);
+		
+		// Moves the next bit into the MSB position.
 		pattern <<= 1;
 	}
 }
 
+// Activates the selected digit
 static void digit_on(uint8_t pos)
 {
 	switch (pos) {
@@ -110,32 +114,31 @@ static void digit_on(uint8_t pos)
 	}
 }
 
+
 void display_next_digit(void)
 {
-	if (position == 0 && swap_request) {    /* swap only at the start of a full scan */
+	// Swaps digit only at the start of a complete scan
+	if (position == 0 && swap_request) {   
 		front ^= 1;
 		swap_request = 0;
-		unit_led_select(units[front]);      /* LED changes together with the number */
+
 	}
 
-	shift_out(buffers[front][position]);                          /* 1. load segments    */
+	// Sends pattern for current digit
+	shift_out(buffers[front][position]);                          
 	PORTD |= (1 << PD4) | (1 << PD5) | (1 << PD6) | (1 << PD7);   /* 2. all digits off   */
 	PORTC |= (1 << SH_ST);                                        /* 3. latch segments   */
 	PORTC &= ~(1 << SH_ST);
 	digit_on(position);                                           /* 4. this digit on    */
 
+	// Go to next digit
 	position = (position + 1) & 0x03;
 }
 
-/* Pick the decimal point so the number uses all 4 digits:
- *   0.000 .. 9.999  -> x.xxx  (dp on digit 0)
- *   10.00 .. 99.99  -> xx.xx  (dp on digit 1)
- *   100.0 .. 999.9  -> xxx.x  (dp on digit 2)
- *   1000  .. 9999   -> xxxx   (no dp)
- * The limits are 9.9995 / 99.995 / 999.95 / 9999.5 (not 10 / 100 / ...) so that
- * a value like 9.9997 rounds into the next range as "10.00" instead of "0.000". */
+// Converts floating point into a four digit display value
 static void display_show(float value, uint8_t unit)
 {
+	// Prevents negative values
 	if (value < 0.0f) {
 		value = 0.0f;
 	}

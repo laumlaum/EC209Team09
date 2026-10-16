@@ -32,10 +32,8 @@
 #define MV_PER_COUNT  ((VREF_MV / 1024.0f) / (GVS * GVO))    /* supply mV per ADC count */
 #define MA_PER_COUNT  ((VREF_MV / 1024.0f) / (GIS * GIO))    /* load mA per ADC count   */
 
-/* The maths is done in ADC counts with the offset (mean) removed, and scaled
- * to mV / mA once at the end - same result as converting every sample, but
- * far fewer float operations (~25 ms per window instead of ~200 ms).        */
 
+// function to calculate the mean 
 static float mean_raw(const volatile uint16_t *raw, uint8_t n){
 	uint32_t sum = 0;
 	for(uint8_t k = 0; k < n; k++){
@@ -58,27 +56,6 @@ static float rms_counts(const volatile uint16_t *raw, uint8_t n){
 float calc_vrms(const volatile uint16_t *v_raw, uint8_t n){
 	return rms_counts(v_raw, n) * MV_PER_COUNT;                       // mV rms
 }
-
-
-// /* Amplitude of the fundamental in ADC counts (single-bin DFT).
-//  * Needs a whole number of cycles in the window, which you already have. */
-// static float fundamental_counts(const volatile uint16_t *raw, uint8_t n){
-// 	float mean = mean_raw(raw, n);
-// 	float w  = 2.0f * PI_F * SIGNAL_HZ * SAMPLE_PERIOD_S;  // phase step per sample
-// 	float dc = cosf(w), ds = sinf(w);
-// 	float c = 1.0f, s = 0.0f;
-// 	float re = 0.0f, im = 0.0f;
-// 
-// 	for(uint8_t k = 0; k < n; k++){
-// 		float x = (float)raw[k] - mean;
-// 		re += x * c;
-// 		im += x * s;
-// 		float c_new = c * dc - s * ds;   // rotate (c,s) by w
-// 		s = s * dc + c * ds;
-// 		c = c_new;
-// 	}
-// 	return 2.0f * sqrtf(re * re + im * im) / n;
-// }
 
 
 

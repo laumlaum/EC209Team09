@@ -20,16 +20,17 @@ static uint8_t ticks = 0;
 
 void timer2_init(void)
 {
-	TCCR2A = (1 << WGM21);                  /* CTC, TOP = OCR2A */
-	TCCR2B = (1 << CS22);                   /* clk / 64  (Timer2's /64 is CS22 alone) */
-	OCR2A  = 124;                           /* 4 ms */
-	TIMSK2 = (1 << OCIE2A);
+	TCCR2A = (1 << WGM21);                  // Set to CTC mode with top as OCR21
+	TCCR2B = (1 << CS22);                   // Set prescalar to 64
+	OCR2A  = 124;                           // counts to 4ms
+	TIMSK2 = (1 << OCIE2A);					// Enable interrupt
 }
 
 ISR(TIMER2_COMPA_vect, ISR_NOBLOCK)
 {
 	display_next_digit();
 
+	// Makes it so that digits are displayed for 1 second.
 	ticks++;
 	if (ticks >= 250) {                     /* 250 x 4 ms = 1 s */
 		ticks = 0;

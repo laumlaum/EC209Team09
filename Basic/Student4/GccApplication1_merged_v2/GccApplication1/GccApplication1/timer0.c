@@ -21,7 +21,7 @@ void timer0_init(){
 	TCCR0A = 0;
 	TCCR0B |= (1<<CS01); // Prescaler of 8
 	TIMSK0 |= (1<<TOIE0); // TImer overflow interrupt enable
-	TIFR0 |= (1<<TOV0);
+	TIFR0 |= (1<<TOV0); // Timer0 overflow flag 
 }
 
 

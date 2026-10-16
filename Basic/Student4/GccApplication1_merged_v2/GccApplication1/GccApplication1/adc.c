@@ -12,25 +12,32 @@ volatile uint8_t adc_index = 0;
 volatile uint8_t skip;
 
 ISR(ADC_vect){
-	TIFR1 = (1 << OCF1B);                 // MUST clear: the ADC triggers on the RISING EDGE of this flag.
-	                                      // Without it, only the first conversion ever happens.
-	uint8_t ch = channel;                 // channel that just finished converting
+	// Clears the flag
+	TIFR1 = (1 << OCF1B);                 
+	                 
+	// Switches sampling channel				                    
+	uint8_t ch = channel;                
 	channel = ch ^ 1;
-	ADMUX = (1 << REFS0) | channel;       // next conversion, written early
+	ADMUX = (1 << REFS0) | channel;  
+	// Stores ADC into result
 	uint16_t result = ADC;
-	PINB = (1<<PINB5);                    // EoC toggle
+	// Toggles EoC
+	PINB = (1<<PINB5);                    
 
+	// If adc full, leave
 	if(flag) return;
+	// Skips first couple samples to allow for ADC to settle
 	if(skip){ skip--; return; }
 
 	if(ch == 0){
-		adc0[adc_index] = result;		  // Alternates between adc0 and adc1
+		adc0[adc_index] = result;		  
 		} else {
 		adc1[adc_index] = result;
 		counter++;
 		adc_index++;
 	}
 
+	// Checks whether adc arrays are full
 	if(counter >= SAMPLES){
 		flag = 1;
 		adc_index = 0;

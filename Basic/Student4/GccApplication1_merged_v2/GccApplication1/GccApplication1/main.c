@@ -26,10 +26,10 @@ extern volatile uint32_t elapsed_ticks;
 
 
 int main(void){
-	/* ---------------- Init ---------------- */
 	DDRB |= (1<<PINB5);          // EoC debug pin / LED (was DDRB = 0xFF: don't drive pins we don't use)
 	DDRD &= ~(1<<PIND2);         // INT0 input from the zero-crossing detector
 
+	// Initialises peripherals 
 	display_init();
 	//timer0_init();             // frequency measurement - Timer0 is free for this (display uses Timer2)
 	timer2_init();
@@ -40,9 +40,10 @@ int main(void){
 	//int0_init();
 	sei();
 
+	// Value of the first adc sample to be removed.
 	uint8_t first = 1;
 
-	/* totals for the current second */
+	// totals for the current second 
 	float vrms_sum = 0, ipk_sum = 0, p_sum = 0;
 	uint8_t windows = 0;
 
@@ -53,16 +54,14 @@ int main(void){
 
 	while(1){
 
-		/* ---------------- Wait -> Process -> Re-arm ---------------- */
+		// If adc is ready, and if its the first sample, remove it.
 		if(flag){
-			if(first){                    // first window after power-up: throw it away
+			if(first){                   
 				first = 0;
 				adc_restart();
 				continue;
 			}
-			// flag == 1 means the ISR has stopped, so adc0/adc1 are safe to read
-			// Use only a whole number of signal cycles (see calc.c): 98 of the
-			// 100 pairs at 510 Hz, all 100 at 500 Hz.
+			// Calculates frequency of voltage sample
 			float   hz = estimate_hz(adc0, SAMPLES);
 			uint8_t n  = whole_cycle_samples(hz, SAMPLES);
 
@@ -71,10 +70,10 @@ int main(void){
 			p_sum    += calculate_power(adc0, adc1, n, hz);       // gets power in W
 			windows++;
 
-			adc_restart();                // Re-arm: start the next window
+			adc_restart();                
 		}
 
-		/* ---------------- Report (once per second) ---------------- */
+		
 		if(one_second_flag && windows > 0){
 			one_second_flag = 0;
 
@@ -97,7 +96,7 @@ int main(void){
 			case 2:  display_show_power(p);                break;
 			default: display_show_voltage(vrms / 1000.0f);        break;
 			}
-			if(++page_ticks >= PAGE_SECONDS){
+			if(++page_ticks >= PAGE_SECONDS){			// Allows for values to displayed for longer on display
 				page_ticks = 0;
 				page = (page +1) & 0x03;
 			}

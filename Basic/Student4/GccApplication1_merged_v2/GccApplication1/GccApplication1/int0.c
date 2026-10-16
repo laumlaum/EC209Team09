@@ -29,6 +29,7 @@ ISR(INT0_vect){
 	
 }
 
+// Initialises int0
 void int0_init(){
 	EICRA |= (1<<ISC01) | (1<<ISC00);
 	EIMSK |= (1<<INT0);
