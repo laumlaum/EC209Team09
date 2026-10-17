@@ -19,14 +19,15 @@
  * Current: shunt R5 || R6 = 0.5 ohm, amp gain (1 + 8.2/3.3) x 8.2/11.5 = 2.485 */
 #define GVS  0.0460f        /* V at divider per V of supply  */
 #define GVO  1.0f           /* voltage amp gain              */
-#define GIS  0.5f           /* V across shunt per A of load  */
+#define GIS  0.575f           /* V across shunt per A of load  */
 #define GIO  2.485f         /* current amp gain              */
 
-#define IPEAK_CAL_A   0.000551f   /* quadratic term */
-#define IPEAK_CAL_B   0.752f      /* linear term    */
-#define IPEAK_CAL_C   36.6f       /* mA offset      */
+#define IPEAK_GAIN      1.123f
+#define IPEAK_OFFSET_MA 11.6f
+#define POWER_GAIN      1.067f
+#define POWER_OFFSET_W  0.177f
 
-#define VREF_MV  5000.0f    /* measure AVCC on the board and put it here */
+#define VREF_MV  4978.0f    /* measure AVCC on the board and put it here */
 
 /* Scale factors, worked out by the compiler (no division at run time) */
 #define MV_PER_COUNT  ((VREF_MV / 1024.0f) / (GVS * GVO))    /* supply mV per ADC count */
@@ -60,14 +61,11 @@ float calc_vrms(const volatile uint16_t *v_raw, uint8_t n){
 
 
 float get_ipeak(const volatile uint16_t *i_raw, uint8_t n){
-	float ipeak_raw = rms_counts(i_raw, n) * MA_PER_COUNT * 1.41421356f;   // mA peak, uncorrected
-
-	float ipeak_cal = IPEAK_CAL_A * ipeak_raw * ipeak_raw
-	+ IPEAK_CAL_B * ipeak_raw
-	+ IPEAK_CAL_C;                                        // mA peak, corrected
-
+	float ipeak_ma = rms_counts(i_raw, n) * MA_PER_COUNT * 1.41421356f;   // mA peak, uncorrected
+	float ipeak_cal = IPEAK_GAIN * ipeak_ma - IPEAK_OFFSET_MA;            // mA peak, corrected
 	return (ipeak_cal < 0.0f) ? 0.0f : ipeak_cal;
 }
+
 float calculate_power(const volatile uint16_t *voltage, const volatile uint16_t *current, uint8_t n, float signal_hz){
 	// Averaging two samples TRIG_PERIOD_S either side shrinks a sine by
 	// cos(2 pi f Ts): this puts it back. (cos 36 deg = 0.809 at 200 us, 500 Hz)
@@ -95,7 +93,10 @@ float calculate_power(const volatile uint16_t *voltage, const volatile uint16_t 
 	}
 
 	// counts^2 -> mV x mA = uW -> W
-	return (sum / (2.0f * n)) * (MV_PER_COUNT * MA_PER_COUNT / 1.0e6f) * gain;
+	float p = (sum / (2.0f * n)) * (MV_PER_COUNT * MA_PER_COUNT / 1.0e6f) * gain;
+
+	p = POWER_GAIN * p - POWER_OFFSET_W;
+	return (p < 0.0f) ? 0.0f : p;
 }
 
 
