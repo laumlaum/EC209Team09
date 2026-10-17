@@ -27,7 +27,7 @@
 #define POWER_GAIN      1.067f
 #define POWER_OFFSET_W  0.177f
 
-#define VREF_MV  4978.0f    /* measure AVCC on the board and put it here */
+#define VREF_MV  4978.0f    
 
 /* Scale factors, worked out by the compiler (no division at run time) */
 #define MV_PER_COUNT  ((VREF_MV / 1024.0f) / (GVS * GVO))    /* supply mV per ADC count */
@@ -66,6 +66,7 @@ float get_ipeak(const volatile uint16_t *i_raw, uint8_t n){
 	return (ipeak_cal < 0.0f) ? 0.0f : ipeak_cal;
 }
 
+// Calculate power using linear approximation
 float calculate_power(const volatile uint16_t *voltage, const volatile uint16_t *current, uint8_t n, float signal_hz){
 	// Averaging two samples TRIG_PERIOD_S either side shrinks a sine by
 	// cos(2 pi f Ts): this puts it back. (cos 36 deg = 0.809 at 200 us, 500 Hz)
