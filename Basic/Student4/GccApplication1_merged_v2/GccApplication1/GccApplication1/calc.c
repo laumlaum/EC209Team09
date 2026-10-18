@@ -68,9 +68,7 @@ float get_ipeak(const volatile uint16_t *i_raw, uint8_t n){
 
 // Calculate power using linear approximation
 float calculate_power(const volatile uint16_t *voltage, const volatile uint16_t *current, uint8_t n, float signal_hz){
-	// Averaging two samples TRIG_PERIOD_S either side shrinks a sine by
-	// cos(2 pi f Ts): this puts it back. (cos 36 deg = 0.809 at 200 us, 500 Hz)
-	// Uses the measured frequency: at 510 Hz the factor is 0.9% different.
+	// Undo shrink from averaging samples TRIG_PERIOD apart
 	float gain = 1.0f / cosf(2.0f * PI_F * signal_hz * TRIG_PERIOD_S);
 
 	float v_mean = mean_raw(voltage, n);
@@ -101,26 +99,13 @@ float calculate_power(const volatile uint16_t *voltage, const volatile uint16_t 
 }
 
 
-/* ---- Whole number of cycles ----
- * RMS, offset removal and the power wrap-around all assume the window holds a
- * whole number of signal cycles. 100 pairs x 400 us = 40 ms is exactly 20
- * cycles at 500 Hz, but 20.4 cycles at 510 Hz. The extra 0.4 cycle adds an
- * error that depends on where in the cycle each window happens to start, so
- * the readings jump around from second to second - most of all for power at a
- * low power factor, because the error is a share of V x I, not of P.
- * Fix: measure the frequency from the samples, then use only the first n
- * pairs, where n x 400 us is as close as possible to a whole number of cycles
- * (98 pairs = 19.99 cycles at 510 Hz; all 100 at 500 Hz).                    */
-
-/* Frequency from the rising zero crossings of the voltage samples.
- * Crossing times are interpolated between samples, so the result is good to
- * well under 1 Hz even though there are only ~5 samples per cycle.          */
+// Frequency from the rising zero crossing of voltage 
 float estimate_hz(const volatile uint16_t *v_raw, uint8_t n){
 	uint32_t sum = 0;
 	for(uint8_t k = 0; k < n; k++){
 		sum += v_raw[k];
 	}
-	/* Compare x*n against the sum instead of x against the mean: integer only */
+	/* Compare x*n against the sum instead of x against the meanm, keeps integer only */
 	int32_t prev = (int32_t)v_raw[0] * n - (int32_t)sum;
 	float first = 0.0f, last = 0.0f;
 	uint8_t crossings = 0;
@@ -145,10 +130,7 @@ float estimate_hz(const volatile uint16_t *v_raw, uint8_t n){
 	return hz;
 }
 
-/* Largest useful window (at least 3/4 of n) that holds a whole number of
- * cycles. Starts from the most cycles that fit and only accepts a shorter
- * window if its leftover is clearly smaller (by 0.02 cycle or more), so it
- * keeps as many samples as possible: 100 at 500 Hz, 98 at 510 Hz.          */
+// Find largest window closest to whole number of samples
 uint8_t whole_cycle_samples(float signal_hz, uint8_t n){
 	float per_cycle = 1.0f / (signal_hz * SAMPLE_PERIOD_S);   // pairs per cycle (~4.9)
 	uint8_t best_n = n;
@@ -161,10 +143,10 @@ uint8_t whole_cycle_samples(float signal_hz, uint8_t n){
 			continue;
 		}
 		if(nn < (uint8_t)(3 * n / 4)){
-			break;                                            // too short: stop
+			break;                                            // too short
 		}
 		float err = fabsf((float)nn - exact) / per_cycle;     // leftover, in cycles
-		if(err < best_err - 0.02f){
+		if(err < best_err - 0.02f){	 // Switch if better
 			best_err = err;
 			best_n = nn;
 		}
