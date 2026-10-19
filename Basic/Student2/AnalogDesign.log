@@ -1,6 +1,6 @@
 LTspice 26.0.1 for Windows
 Circuit: C:\Users\laum7\OneDrive\Desktop\EC209\EC209LTSpiceStuff\EC209Team09\Basic\Student2\AnalogDesign.net
-Start Time: Thu Oct 15 14:59:31 2026
+Start Time: Fri Oct 16 16:58:20 2026
 solver = Normal
 Maximum thread count: 12
 tnom = 27
@@ -11,7 +11,7 @@ Direct Newton iteration failed to find operating point.
 Starting Gmin stepping
 Gmin stepping succeeded in finding the operating point.
 
-Total elapsed time: 1.904 seconds.
+Total elapsed time: 1.568 seconds.
 
 Files loaded:
 C:\Users\laum7\OneDrive\Desktop\EC209\EC209LTSpiceStuff\EC209Team09\Basic\Student2\AnalogDesign.net
