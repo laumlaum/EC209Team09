@@ -19,14 +19,15 @@
  * Current: shunt R5 || R6 = 0.5 ohm, amp gain (1 + 8.2/3.3) x 8.2/11.5 = 2.485 */
 #define GVS  0.0460f        /* V at divider per V of supply  */
 #define GVO  1.0f           /* voltage amp gain              */
-#define GIS  0.5f           /* V across shunt per A of load  */
+#define GIS  0.575f           /* V across shunt per A of load  */
 #define GIO  2.485f         /* current amp gain              */
 
-#define IPEAK_CAL_A   0.000551f   /* quadratic term */
-#define IPEAK_CAL_B   0.752f      /* linear term    */
-#define IPEAK_CAL_C   36.6f       /* mA offset      */
+#define IPEAK_GAIN      1.123f
+#define IPEAK_OFFSET_MA 11.6f
+#define POWER_GAIN      1.067f
+#define POWER_OFFSET_W  0.177f
 
-#define VREF_MV  5000.0f    /* measure AVCC on the board and put it here */
+#define VREF_MV  4978.0f    
 
 /* Scale factors, worked out by the compiler (no division at run time) */
 #define MV_PER_COUNT  ((VREF_MV / 1024.0f) / (GVS * GVO))    /* supply mV per ADC count */
@@ -60,18 +61,14 @@ float calc_vrms(const volatile uint16_t *v_raw, uint8_t n){
 
 
 float get_ipeak(const volatile uint16_t *i_raw, uint8_t n){
-	float ipeak_raw = rms_counts(i_raw, n) * MA_PER_COUNT * 1.41421356f;   // mA peak, uncorrected
-
-	float ipeak_cal = IPEAK_CAL_A * ipeak_raw * ipeak_raw
-	+ IPEAK_CAL_B * ipeak_raw
-	+ IPEAK_CAL_C;                                        // mA peak, corrected
-
+	float ipeak_ma = rms_counts(i_raw, n) * MA_PER_COUNT * 1.41421356f;   // mA peak, uncorrected
+	float ipeak_cal = IPEAK_GAIN * ipeak_ma - IPEAK_OFFSET_MA;            // mA peak, corrected
 	return (ipeak_cal < 0.0f) ? 0.0f : ipeak_cal;
 }
+
+// Calculate power using linear approximation
 float calculate_power(const volatile uint16_t *voltage, const volatile uint16_t *current, uint8_t n, float signal_hz){
-	// Averaging two samples TRIG_PERIOD_S either side shrinks a sine by
-	// cos(2 pi f Ts): this puts it back. (cos 36 deg = 0.809 at 200 us, 500 Hz)
-	// Uses the measured frequency: at 510 Hz the factor is 0.9% different.
+	// Undo shrink from averaging samples TRIG_PERIOD apart
 	float gain = 1.0f / cosf(2.0f * PI_F * signal_hz * TRIG_PERIOD_S);
 
 	float v_mean = mean_raw(voltage, n);
@@ -95,30 +92,20 @@ float calculate_power(const volatile uint16_t *voltage, const volatile uint16_t 
 	}
 
 	// counts^2 -> mV x mA = uW -> W
-	return (sum / (2.0f * n)) * (MV_PER_COUNT * MA_PER_COUNT / 1.0e6f) * gain;
+	float p = (sum / (2.0f * n)) * (MV_PER_COUNT * MA_PER_COUNT / 1.0e6f) * gain;
+
+	p = POWER_GAIN * p - POWER_OFFSET_W;
+	return (p < 0.0f) ? 0.0f : p;
 }
 
 
-/* ---- Whole number of cycles ----
- * RMS, offset removal and the power wrap-around all assume the window holds a
- * whole number of signal cycles. 100 pairs x 400 us = 40 ms is exactly 20
- * cycles at 500 Hz, but 20.4 cycles at 510 Hz. The extra 0.4 cycle adds an
- * error that depends on where in the cycle each window happens to start, so
- * the readings jump around from second to second - most of all for power at a
- * low power factor, because the error is a share of V x I, not of P.
- * Fix: measure the frequency from the samples, then use only the first n
- * pairs, where n x 400 us is as close as possible to a whole number of cycles
- * (98 pairs = 19.99 cycles at 510 Hz; all 100 at 500 Hz).                    */
-
-/* Frequency from the rising zero crossings of the voltage samples.
- * Crossing times are interpolated between samples, so the result is good to
- * well under 1 Hz even though there are only ~5 samples per cycle.          */
+// Frequency from the rising zero crossing of voltage 
 float estimate_hz(const volatile uint16_t *v_raw, uint8_t n){
 	uint32_t sum = 0;
 	for(uint8_t k = 0; k < n; k++){
 		sum += v_raw[k];
 	}
-	/* Compare x*n against the sum instead of x against the mean: integer only */
+	/* Compare x*n against the sum instead of x against the meanm, keeps integer only */
 	int32_t prev = (int32_t)v_raw[0] * n - (int32_t)sum;
 	float first = 0.0f, last = 0.0f;
 	uint8_t crossings = 0;
@@ -143,10 +130,7 @@ float estimate_hz(const volatile uint16_t *v_raw, uint8_t n){
 	return hz;
 }
 
-/* Largest useful window (at least 3/4 of n) that holds a whole number of
- * cycles. Starts from the most cycles that fit and only accepts a shorter
- * window if its leftover is clearly smaller (by 0.02 cycle or more), so it
- * keeps as many samples as possible: 100 at 500 Hz, 98 at 510 Hz.          */
+// Find largest window closest to whole number of samples
 uint8_t whole_cycle_samples(float signal_hz, uint8_t n){
 	float per_cycle = 1.0f / (signal_hz * SAMPLE_PERIOD_S);   // pairs per cycle (~4.9)
 	uint8_t best_n = n;
@@ -159,10 +143,10 @@ uint8_t whole_cycle_samples(float signal_hz, uint8_t n){
 			continue;
 		}
 		if(nn < (uint8_t)(3 * n / 4)){
-			break;                                            // too short: stop
+			break;                                            // too short
 		}
 		float err = fabsf((float)nn - exact) / per_cycle;     // leftover, in cycles
-		if(err < best_err - 0.02f){
+		if(err < best_err - 0.02f){	 // Switch if better
 			best_err = err;
 			best_n = nn;
 		}
