@@ -11,9 +11,7 @@ void timer1_init(){
 	TCCR1A |= (1<<COM1B0);
 	TCCR1B |= (1<<WGM12) | (1<<CS10);
 
-	/* 200 x 0.5 us = 100 us per conversion. Needs the ADC prescaler at /8
-	 * (see adc_init in adc.c) so a conversion (~52 us) still finishes well
-	 * inside this shorter window; /16's ~104 us conversion would not. */
+	// Sets prescaler to trigger per 100us
 	OCR1A = 199;
 	OCR1B = 199;
 }
