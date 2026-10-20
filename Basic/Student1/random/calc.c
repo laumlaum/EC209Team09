@@ -14,6 +14,7 @@
 #define MV_PER_COUNT  ((VREF_MV / 1024.0f) / (GVS * GVO))
 #define MA_PER_COUNT  ((VREF_MV / 1024.0f) / (GIS * GIO))
 
+// Function to calculate the mean
 static float mean_raw(const volatile uint16_t *raw, uint8_t n){
 	float sum = 0.0f;
 	for(uint8_t k = 0; k < n; k++){
@@ -22,6 +23,7 @@ static float mean_raw(const volatile uint16_t *raw, uint8_t n){
 	return sum / n;
 }
 
+// Gets the RMS value of inserted array
 static float rms_counts(const volatile uint16_t *raw, uint8_t n){
 	float mean = mean_raw(raw, n);
 	float sum_sq = 0.0f;
@@ -32,15 +34,18 @@ static float rms_counts(const volatile uint16_t *raw, uint8_t n){
 	return sqrtf(sum_sq / n);
 }
 
+// Function to calculate Voltage RMS
 float calc_vrms(const volatile uint16_t *v_raw, uint8_t n){
 	return rms_counts(v_raw, n) * MV_PER_COUNT;
 }
 
+// Calculates peak current 
 float get_ipeak(const volatile uint16_t *i_raw, uint8_t n){
 	float ipeak_ma = rms_counts(i_raw, n) * MA_PER_COUNT * 1.41421356f;
 	return (ipeak_ma < 0.0f) ? 0.0f : ipeak_ma;
 }
 
+// Gets full ADC sample for voltage first then current, then uses this to calculate power
 float calculate_power_interleaved(const volatile uint16_t *v_raw,
 const volatile uint16_t *i_raw, uint8_t n){
 	float v_mean = mean_raw(v_raw, n);
@@ -54,7 +59,7 @@ const volatile uint16_t *i_raw, uint8_t n){
 	float p = (sum / n) * (MV_PER_COUNT * MA_PER_COUNT / 1.0e6f);
 	return (p < 0.0f) ? 0.0f : p;
 }
-
+// Estimates the frequency of the source 
 float estimate_hz(const volatile uint16_t *v_raw, uint8_t n){
 	float mean = mean_raw(v_raw, n);
 	uint8_t crossings = 0;
@@ -81,6 +86,7 @@ float estimate_hz(const volatile uint16_t *v_raw, uint8_t n){
 	return cycles / total_t;
 }
 
+// Calculates the best number of samples that can fit in the frequency
 uint8_t whole_cycle_samples(float signal_hz, uint8_t n){
 	if(signal_hz < 1.0f) return n;
 	float period_s = 1.0f / signal_hz;
