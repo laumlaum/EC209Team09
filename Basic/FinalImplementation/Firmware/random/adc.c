@@ -59,14 +59,10 @@ void adc_restart(uint8_t window, uint8_t phase){
 	}
 	EIMSK &= ~(1<<INT0);   // off again: nothing may interrupt the acquisition below
 
-	// Phase-shift the sampling grid. TCNT1 free-runs the rest of the time,
-	// so forcing it here to either 0 or 100 is what actually sets whether
-	// this window's samples land on the phase-0 grid or exactly half a tick
-	// (50 us, half of the 100 us native period from timer1.c) into it. Done
-	// with interrupts off: a 16-bit TCNT1 write is two 8-bit bus writes, and
-	// an ISR landing in between would smear it.
+	// Remember old interrupts and then disable interrupts
 	uint8_t sreg = SREG;
 	cli();
+	// If else statement for phase
 	TCNT1 = phase ? 100 : 0;
 	SREG = sreg;
 	TIFR1 = (1 << OCF1B);  // a flag that latched during the jump is stale, clear it
