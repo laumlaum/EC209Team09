@@ -1,5 +1,8 @@
 ![Header Image](https://github.com/ee209-2020class/ee209-2020class.github.io/blob/master/ExtraInfo/logo.png)
 
+## C8, C10, C11, C13 were desoldered as it was redundant filtering that would introduce unwanted voltage in our mains
+
+
 # PCB for Smart Energy Monitor
 
 This folder should contain your Altium Designer files for your PCB design.
