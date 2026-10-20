@@ -38,26 +38,18 @@ ISR(ADC_vect){
 }
 
 void adc_init(){
-	ADMUX = 0b01000000;
-	ADCSRA = 0b10101011;   // ADEN, ADATE, ADIE, /8 (ADSC removed: stray first conversion)
-	// /8 -> ADC clock 250 kHz, conversion ~52us, fits inside
-	// the 100us trigger period set up in timer1.c. (/16's
-	// ~104us conversion would not have fit.) Slightly above
-	// the datasheet's 200kHz "full accuracy" guideline, a
-	// small, known tradeoff, not a bug.
-	ADCSRB |= (1<<ADTS2) | (1<<ADTS0);
+	ADMUX = 0b01000000; // Set AVcc voltage reference
+	ADCSRA = 0b10101011;  // Enables ADEN, ADATE, ADIE, and sets prescaler to /8
+	ADCSRB |= (1<<ADTS2) | (1<<ADTS0); // Timer 1 compare match enable
 	DIDR0 = 0x00;
 }
 
 void adc_restart(uint8_t window, uint8_t phase){
 	counter = 0;
 	adc_index = 0;
-	channel = window;      // window 0 -> ADC channel 0 (V), window 1 -> ADC channel 1 (I)
+	channel = window;      
 
-	// INT0 is only allowed to be live while we're waiting for the next edge.
-	// It's switched off again before the acquisition itself starts, so it
-	// can never delay or steal an ADC trigger during the time-critical part
-	// (see the warning in timer1.c about any ISR doing that).
+	
 	zc_flag = 0;
 	EIFR = (1<<INTF0);     // clear any edge that arrived while INT0 was off
 	EIMSK |= (1<<INT0);
